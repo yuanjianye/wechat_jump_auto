@@ -56,7 +56,7 @@ def get_distance():
         if 38 < cir_w < 43 and  38 < cir_h < 43:
             print(cir_x,cir_y,cir_w,cir_h)
             cir_center_x = cir_x + cir_w/2
-            cir_center_y = cir_y + cir_h/2 - 80
+            cir_center_y = cir_y + cir_h/2 + 30
             break
     else:
         print("can not find circle")
@@ -65,6 +65,7 @@ def get_distance():
 
     #find box 
     img2 = cv2.cvtColor(img1,cv2.COLOR_RGB2GRAY)
+    img6 = copy.deepcopy(img2)
     img2 = cv2.adaptiveThreshold(img2,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,5,3)
     img2, cnts, hierarchy = cv2.findContours(img2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     img5 = copy.deepcopy(img2)
@@ -82,7 +83,7 @@ def get_distance():
 
     for c_cnt in cnts:
         x, y, w, h = cv2.boundingRect(c_cnt)
-        if y < cir_y - 20 and 120 < w < 320 and 80 < h < 250:
+        if y < cir_y - 20 and 120 < w < 320 and 80 < h < 250 and cv2.contourArea(c_cnt) > 10000:
             candidate_cnts.append(c_cnt)
             if candidate_center_x == 0:
                 candidate_center_x = x + w/2
@@ -98,21 +99,23 @@ def get_distance():
         return 0
 
     distance = math.pow((candidate_center_y - cir_center_y),2) + math.pow((candidate_center_x - cir_center_x),2)
+    distance = distance / 20000.0
 
     print("candidate_cnts count = %d" % len(candidate_cnts))
-    print("distance = %d" % distance)
+    print("distance = %f" % distance)
 
     img4 = copy.deepcopy(img2)
     img4 = cv2.drawContours(img4, candidate_cnts, -1, (0, 0, 0), 8)
 
-    show_imgs([img1,mask2,img5,img2,img3,img4])
+#    show_imgs([img1,mask2,img5,img2,img3,img4,img6])
     return distance
 
 if __name__ == "__main__":
+#    distance = get_distance()
+#    touch_emulate(int (math.pow((distance * 150000),0.6) * 230))
     while True:
         distance=get_distance()
         if distance <= 0:
-            distance = int(input("caculate error, please input distance by hand\n"))
-        touch_emulate(distance*7)
+            distance = int(input("Caculate error, Please input distance by hand\n"))
+        touch_emulate(int (math.pow((distance * 150000),0.6) * 230))
         time.sleep(2)
-
