@@ -56,12 +56,14 @@ def get_distance():
         if 38 < cir_w < 43 and  38 < cir_h < 43:
             print(cir_x,cir_y,cir_w,cir_h)
             cir_center_x = cir_x + cir_w/2
-            cir_center_y = cir_y + cir_h/2 - 50
+            cir_center_y = cir_y + cir_h/2 - 80
             break
     else:
         print("can not find circle")
         show_imgs([img1,hsv,mask,mask2])
+        return 0
 
+    #find box 
     img2 = cv2.cvtColor(img1,cv2.COLOR_RGB2GRAY)
     img2 = cv2.adaptiveThreshold(img2,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,5,3)
     img2, cnts, hierarchy = cv2.findContours(img2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -77,6 +79,7 @@ def get_distance():
     candidate_cnts = []
     candidate_center_x = 0
     candidate_center_y = 0
+
     for c_cnt in cnts:
         x, y, w, h = cv2.boundingRect(c_cnt)
         if y < cir_y - 20 and 120 < w < 320 and 80 < h < 250:
@@ -89,17 +92,27 @@ def get_distance():
                 candidate_center_y = y + h/2
             else:
                 candidate_center_y = (candidate_center_y + y + h)/2
+
+    if len(candidate_cnts) == 0:
+        print("no candidate_cnt found")
+        return 0
+
     distance = math.pow((candidate_center_y - cir_center_y),2) + math.pow((candidate_center_x - cir_center_x),2)
-    img4 = copy.deepcopy(img2)
-    img4 = cv2.drawContours(img4, candidate_cnts, -1, (0, 0, 0), 8)
 
     print("candidate_cnts count = %d" % len(candidate_cnts))
     print("distance = %d" % distance)
 
-    show_imgs([img1,img2,img3,img4,img5,mask])
+    img4 = copy.deepcopy(img2)
+    img4 = cv2.drawContours(img4, candidate_cnts, -1, (0, 0, 0), 8)
+
+    show_imgs([img1,mask2,img5,img2,img3,img4])
     return distance
 
 if __name__ == "__main__":
-    distance=get_distance()
-    touch_emulate(distance*7)
+    while True:
+        distance=get_distance()
+        if distance <= 0:
+            distance = int(input("caculate error, please input distance by hand\n"))
+        touch_emulate(distance*7)
+        time.sleep(2)
 
