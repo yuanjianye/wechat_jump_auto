@@ -7,12 +7,12 @@ import copy
 import time
 import numpy as np
 import imutils
+import multiprocessing
 
-def getimg():
+def get_img():
     os.system("adb shell screencap -p /sdcard/jump.png")
     os.system("adb pull /sdcard/jump.png")
-    myimg=cv2.imread("jump.png")
-    return myimg[350:-400,0:-1]
+    return cv2.imread("jump.png")
 
 def contsize(cnt):
     x,y,w,h=cv2.boundingRect(cnt)
@@ -35,17 +35,18 @@ def show_imgs(images):
 def get_center(x,y,w,h):
     return x + w/2, y + h/2
 
-def touch_emulate(useconds):
-    print(useconds)
-    os.system("adb shell write_event %d" % math.ceil(useconds))
+def touch_emulate(usecs):
+    print("touch time = %f second" % (usecs/1000000.0))
+    os.system("adb shell write_event %d" % math.ceil(usecs))
 
     return
 
 def get_distance():
-    img1 = getimg()
+    org_img = get_img()
+    rgb_img = org_img[350:-400, 0:-1]
 
     #find circle
-    hsv = cv2.cvtColor(img1,cv2.COLOR_BGR2HSV)
+    hsv = cv2.cvtColor(rgb_img,cv2.COLOR_BGR2HSV)
     cir_color_lower = np.array([100,30,50])
     cir_color_upper = np.array([140,150,180])
     mask = cv2.inRange(hsv,cir_color_lower,cir_color_upper)
@@ -60,22 +61,23 @@ def get_distance():
             break
     else:
         print("can not find circle")
-        show_imgs([img1,hsv,mask,mask2])
+        show_imgs([org_img,rgb_img,hsv,mask,mask2])
         return 0
 
     #find box 
-    img2 = cv2.cvtColor(img1,cv2.COLOR_RGB2GRAY)
-    img6 = copy.deepcopy(img2)
-    img2 = cv2.adaptiveThreshold(img2,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,5,3)
-    img2, cnts, hierarchy = cv2.findContours(img2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    img5 = copy.deepcopy(img2)
+    gray_img = cv2.cvtColor(rgb_img,cv2.COLOR_RGB2GRAY)
+    bin_img = cv2.adaptiveThreshold(gray_img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,5,3)
+    bin_img_org = copy.deepcopy(bin_img)
+    bin_img, cnts, hierarchy = cv2.findContours(bin_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-    img2 = cv2.drawContours(img5, cnts, -1, (0, 0, 0), 2)
-    img2 = cv2.adaptiveThreshold(img2, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 5, 3)
-    img2, cnts, hierarchy = cv2.findContours(img2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    bin_img = cv2.drawContours(bin_img, cnts, -1, (0, 0, 0), 2)
+    bin_img_draw = copy.deepcopy(bin_img)
+    bin_img = cv2.adaptiveThreshold(bin_img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 5, 3)
+    bin_img_second_thres = copy.deepcopy(bin_img)
+    bin_img, cnts, hierarchy = cv2.findContours(bin_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-    img3 = copy.deepcopy(img2)
-    img3 = cv2.drawContours(img3, [cir_cnt], -1, (0, 0, 0), 8)
+    bin_img_draw_cir = copy.deepcopy(bin_img)
+    bin_img_draw_cir = cv2.drawContours(bin_img_draw_cir, [cir_cnt], -1, (0, 0, 0), 8)
 
     candidate_cnts = []
     candidate_center_x = 0
@@ -104,10 +106,10 @@ def get_distance():
     print("candidate_cnts count = %d" % len(candidate_cnts))
     print("distance = %f" % distance)
 
-    img4 = copy.deepcopy(img2)
-    img4 = cv2.drawContours(img4, candidate_cnts, -1, (0, 0, 0), 8)
+    bin_img_draw_box = copy.deepcopy(bin_img)
+    bin_img_draw_box = cv2.drawContours(bin_img_draw_box, candidate_cnts, -1, (0, 0, 0), 8)
 
-#    show_imgs([img1,mask2,img5,img2,img3,img4,img6])
+    show_imgs([org_img, rgb_img, mask2, gray_img, bin_img_org, bin_img_draw, bin_img_second_thres,bin_img_draw_cir,bin_img_draw_box])
     return distance
 
 if __name__ == "__main__":
@@ -116,6 +118,6 @@ if __name__ == "__main__":
     while True:
         distance=get_distance()
         if distance <= 0:
-            distance = int(input("Caculate error, Please input distance by hand\n"))
+            distance = int(input("=============================\nCaculate error, Please input distance by hand\n"))
         touch_emulate(int (math.pow((distance * 150000),0.5) * 830))
         time.sleep(1)
