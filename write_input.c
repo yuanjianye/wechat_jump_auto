@@ -45,6 +45,14 @@ int write_sync_event()
 
 int main(int argc, char **argv)
 {
+    int usleep_second;
+    if(argc < 2){
+        usleep_second = 0;
+    }
+    else{
+        usleep_second = atoi(argv[1]);
+    }
+
     mt_fd = open("/dev/input/event2",O_RDWR);
     if(mt_fd <0) {
         fprintf(stderr,"open input device failed\n");
@@ -58,6 +66,7 @@ int main(int argc, char **argv)
     write_mt_event(ABS_MT_TOUCH_MAJOR,0xb);
     write_mt_event(ABS_MT_TOUCH_MINOR,0x7);
     write_sync_event();
+    usleep(usleep_second);
     write_mt_event(ABS_MT_TRACKING_ID,-1);
     write_sync_event();
     return 0;

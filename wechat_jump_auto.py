@@ -33,69 +33,19 @@ def show_imgs(images):
 def get_center(x,y,w,h):
     return x + w/2, y + h/2
 
-def touch_emulate(seconds):
-    print(seconds)
-    os.system("adb shell sendevent /dev/input/event2 0003 0039 00000188")
-    os.system("adb shell sendevent /dev/input/event2 0003 0035 00000146")
-    os.system("adb shell sendevent /dev/input/event2 0003 0036 0000040b")
-    os.system("adb shell sendevent /dev/input/event2 0003 0032 0000000f")
-    os.system("adb shell sendevent /dev/input/event2 0003 0030 0000000b")
-    os.system("adb shell sendevent /dev/input/event2 0003 0031 00000007")
-    os.system("adb shell sendevent /dev/input/event2 0003 003c ffffffec")
-    os.system("adb shell sendevent /dev/input/event2 0000 0000 00000000")
-    os.system("adb shell sendevent /dev/input/event2 0003 0036 0000040a")
-    os.system("adb shell sendevent /dev/input/event2 0003 0032 00000011")
-    os.system("adb shell sendevent /dev/input/event2 0003 0030 0000000c")
-    os.system("adb shell sendevent /dev/input/event2 0003 003c ffffffee")
-    os.system("adb shell sendevent /dev/input/event2 0003 003d 00000000")
-    os.system("adb shell sendevent /dev/input/event2 0000 0000 00000000")
-    os.system("adb shell sendevent /dev/input/event2 0003 0035 00000145")
-    os.system("adb shell sendevent /dev/input/event2 0003 0032 00000012")
-    os.system("adb shell sendevent /dev/input/event2 0003 0030 0000000d")
-    os.system("adb shell sendevent /dev/input/event2 0003 003c fffffff0")
-    os.system("adb shell sendevent /dev/input/event2 0003 003d 00000002")
-    os.system("adb shell sendevent /dev/input/event2 0000 0000 00000000")
-    os.system("adb shell sendevent /dev/input/event2 0003 0036 00000409")
-    os.system("adb shell sendevent /dev/input/event2 0003 0032 00000011")
-    os.system("adb shell sendevent /dev/input/event2 0003 003c ffffffef")
-    os.system("adb shell sendevent /dev/input/event2 0003 003d 00000000")
-    os.system("adb shell sendevent /dev/input/event2 0000 0000 00000000")
-    time.sleep(seconds)
-    os.system("adb shell sendevent /dev/input/event2 0003 0039 ffffffff")
-    os.system("adb shell sendevent /dev/input/event2 0000 0000 00000000")
+def touch_emulate(useconds):
+    print(useconds)
+    os.system("adb shell write_event %d" % math.ceil(useconds))
+
     return
-"""
-0003 0039 00000188
-0003 0035 00000146
-0003 0036 0000040b
-0003 0032 0000000f
-0003 0030 0000000b
-0003 0031 00000007
-0003 003c ffffffec
-0000 0000 00000000
-0003 0036 0000040a
-0003 0032 00000011
-0003 0030 0000000c
-0003 003c ffffffee
-0003 003d 00000000
-0000 0000 00000000
-0003 0035 00000145
-0003 0032 00000012
-0003 0030 0000000d
-0003 003c fffffff0
-0003 003d 00000002
-0000 0000 00000000
-0003 0036 00000409
-0003 0032 00000011
-0003 003c ffffffef
-0003 003d 00000000
-0000 0000 00000000
-0003 0039 ffffffff
-0000 0000 00000000
-"""
+
 def get_distance():
     img1 = getimg()
-    img2 = cv2.adaptiveThreshold(img1,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,13,3)
+    img2 = cv2.adaptiveThreshold(img1,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,5,3)
+    img2, cnts, hierarchy = cv2.findContours(img2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    img5 = copy.deepcopy(img2)
+    img2 = cv2.drawContours(img5, cnts, -1, (0, 0, 0), 2)
+    img2 = cv2.adaptiveThreshold(img2, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 5, 3)
     img2, cnts, hierarchy = cv2.findContours(img2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     for cir_cnt in cnts:
@@ -105,6 +55,9 @@ def get_distance():
             cir_center_x = cir_x + cir_w/2
             cir_center_y = cir_y + cir_h/2 - 50
             break
+    else:
+        print("can not find circle")
+        show_imgs([img1,img2,img5])
     img3 = copy.deepcopy(img2)
     img3 = cv2.drawContours(img3, [cir_cnt], -1, (0, 0, 0), 8)
 
@@ -129,13 +82,13 @@ def get_distance():
     #print(len(candidate_cnts))
     #print(distance)
     #print(candidate_cnts)
-    show_imgs([img1,img2,img3,img4])
+    #show_imgs([img1,img2,img3,img4,img5])
     return distance
 
 
 if __name__ == "__main__":
     distance=get_distance()
-    touch_emulate(distance/40000)
+    touch_emulate(distance*7)
 
 
 '''
