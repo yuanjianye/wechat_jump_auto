@@ -56,7 +56,7 @@ def get_distance():
         if 38 < cir_w < 43 and  38 < cir_h < 43:
             print(cir_x,cir_y,cir_w,cir_h)
             cir_center_x = cir_x + cir_w/2
-            cir_center_y = cir_y + cir_h/2 + 30
+            cir_center_y = cir_y + cir_h/2 + 80
             break
     else:
         print("can not find circle")
@@ -117,5 +117,5 @@ if __name__ == "__main__":
         distance=get_distance()
         if distance <= 0:
             distance = int(input("Caculate error, Please input distance by hand\n"))
-        touch_emulate(int (math.pow((distance * 150000),0.6) * 230))
-        time.sleep(2)
+        touch_emulate(int (math.pow((distance * 150000),0.5) * 830))
+        time.sleep(1)
