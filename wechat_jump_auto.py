@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import cv2
 import os
 from matplotlib import pyplot as plt
@@ -5,11 +6,12 @@ import math
 import copy
 import time
 import numpy as np
+import imutils
 
 def getimg():
     os.system("adb shell screencap -p /sdcard/jump.png")
     os.system("adb pull /sdcard/jump.png")
-    myimg=cv2.imread("jump.png",0)
+    myimg=cv2.imread("jump.png")
     return myimg[350:-400,0:-1]
 
 def contsize(cnt):
@@ -41,13 +43,14 @@ def touch_emulate(useconds):
 
 def get_distance():
     img1 = getimg()
-    img2 = cv2.adaptiveThreshold(img1,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,5,3)
-    img2, cnts, hierarchy = cv2.findContours(img2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    img5 = copy.deepcopy(img2)
-    img2 = cv2.drawContours(img5, cnts, -1, (0, 0, 0), 2)
-    img2 = cv2.adaptiveThreshold(img2, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 5, 3)
-    img2, cnts, hierarchy = cv2.findContours(img2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
+    #find circle
+    hsv = cv2.cvtColor(img1,cv2.COLOR_BGR2HSV)
+    cir_color_lower = np.array([100,30,50])
+    cir_color_upper = np.array([140,150,180])
+    mask = cv2.inRange(hsv,cir_color_lower,cir_color_upper)
+    mask2 = cv2.adaptiveThreshold(mask, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 5, 3)
+    mask2, cnts, hierarchy = cv2.findContours(mask2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     for cir_cnt in cnts:
         cir_x, cir_y, cir_w, cir_h = cv2.boundingRect(cir_cnt)
         if 38 < cir_w < 43 and  38 < cir_h < 43:
@@ -57,7 +60,17 @@ def get_distance():
             break
     else:
         print("can not find circle")
-        show_imgs([img1,img2,img5])
+        show_imgs([img1,hsv,mask,mask2])
+
+    img2 = cv2.cvtColor(img1,cv2.COLOR_RGB2GRAY)
+    img2 = cv2.adaptiveThreshold(img2,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,5,3)
+    img2, cnts, hierarchy = cv2.findContours(img2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    img5 = copy.deepcopy(img2)
+
+    img2 = cv2.drawContours(img5, cnts, -1, (0, 0, 0), 2)
+    img2 = cv2.adaptiveThreshold(img2, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 5, 3)
+    img2, cnts, hierarchy = cv2.findContours(img2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
     img3 = copy.deepcopy(img2)
     img3 = cv2.drawContours(img3, [cir_cnt], -1, (0, 0, 0), 8)
 
@@ -82,7 +95,7 @@ def get_distance():
     #print(len(candidate_cnts))
     #print(distance)
     #print(candidate_cnts)
-    #show_imgs([img1,img2,img3,img4,img5])
+    show_imgs([img1,img2,img3,img4,img5,mask])
     return distance
 
 
