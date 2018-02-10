@@ -43,7 +43,7 @@ def touch_emulate(usecs):
 
 def get_distance():
     org_img = get_img()
-    rgb_img = org_img[350:-400, 0:-1]
+    rgb_img = org_img[350:-400, 0:719]
 
     #find circle
     hsv = cv2.cvtColor(rgb_img,cv2.COLOR_BGR2HSV)
@@ -66,11 +66,13 @@ def get_distance():
 
     #find box 
     gray_img = cv2.cvtColor(rgb_img,cv2.COLOR_RGB2GRAY)
-    bin_img = cv2.adaptiveThreshold(gray_img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,5,3)
+    blur_img = cv2.GaussianBlur(gray_img,(3,3),0)
+    canny_img = cv2.Canny(blur_img,50,150)
+    bin_img = cv2.adaptiveThreshold(gray_img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,7,3)
     bin_img_org = copy.deepcopy(bin_img)
     bin_img, cnts, hierarchy = cv2.findContours(bin_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-    bin_img = cv2.drawContours(bin_img, cnts, -1, (0, 0, 0), 2)
+    bin_img = cv2.drawContours(bin_img, cnts, -1, (0, 0, 0), 3)
     bin_img_draw = copy.deepcopy(bin_img)
     bin_img = cv2.adaptiveThreshold(bin_img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 5, 3)
     bin_img_second_thres = copy.deepcopy(bin_img)
@@ -85,7 +87,7 @@ def get_distance():
 
     for c_cnt in cnts:
         x, y, w, h = cv2.boundingRect(c_cnt)
-        if y < cir_y - 20 and 120 < w < 320 and 80 < h < 250 and cv2.contourArea(c_cnt) > 10000:
+        if y < cir_y + 10 and 80 < w < 320 and 40 < h < 250 and cv2.contourArea(c_cnt) > 6000 and (w / h) > 1.3:
             candidate_cnts.append(c_cnt)
             if candidate_center_x == 0:
                 candidate_center_x = x + w/2
@@ -97,6 +99,7 @@ def get_distance():
                 candidate_center_y = (candidate_center_y + y + h)/2
 
     if len(candidate_cnts) == 0:
+        show_imgs([org_img, rgb_img, mask2, gray_img, bin_img_org, bin_img_draw, bin_img_second_thres,bin_img_draw_cir])
         print("no candidate_cnt found")
         return 0
 
@@ -109,15 +112,13 @@ def get_distance():
     bin_img_draw_box = copy.deepcopy(bin_img)
     bin_img_draw_box = cv2.drawContours(bin_img_draw_box, candidate_cnts, -1, (0, 0, 0), 8)
 
-    show_imgs([org_img, rgb_img, mask2, gray_img, bin_img_org, bin_img_draw, bin_img_second_thres,bin_img_draw_cir,bin_img_draw_box])
+    show_imgs([imutils.opencv2matplotlib(org_img), imutils.opencv2matplotlib(rgb_img), mask2, gray_img, bin_img_org, bin_img_draw, bin_img_second_thres,bin_img_draw_cir,bin_img_draw_box,canny_img])
     return distance
 
 if __name__ == "__main__":
-#    distance = get_distance()
-#    touch_emulate(int (math.pow((distance * 150000),0.6) * 230))
     while True:
         distance=get_distance()
         if distance <= 0:
             distance = int(input("=============================\nCaculate error, Please input distance by hand\n"))
         touch_emulate(int (math.pow((distance * 150000),0.5) * 830))
-        time.sleep(1)
+        time.sleep(2)
